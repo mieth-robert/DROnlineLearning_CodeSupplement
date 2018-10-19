@@ -18,17 +18,12 @@ using Mosek # Solver Interface, requires Mosek to be installed
 using CSV, DataFrames   # For Handling Data
 
 include("src/input.jl")
+include("src/model_definitions.jl")
 
 #1 Load case settings
 casefile = length(ARGS) > 0 ? ARGS[1] : "cases/testcase.jl"
-try
-    a, b = include(casefile)
-catch e
-    println(">>>>> Error reading the case file")
-    println(e)
-    exit()
-end
-println("Runnig Case $(casefile)")
+case_id, datadir, price_file, v_root = include(casefile)
+println("Runnig Case $(case_id)")
 
 #2 Load Data from file
 # Feeder Data

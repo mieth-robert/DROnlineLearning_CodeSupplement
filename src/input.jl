@@ -96,6 +96,7 @@ type FeederTopo
   generators::Array{Generator}
   n_buses::Int
   gen_buses::Array{Int}
+  dr_buses::Array{Int}
   line_to::Dict{}
   A::Array{Float64, 2}
   R::Array{Float64, 2}
