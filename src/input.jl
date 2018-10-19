@@ -108,8 +108,9 @@ type FeederTopo
     f.label = label
     f.buses = buses
     f.lines = lines
+    f.generators = generators
     f.n_buses = length(buses)
-    f.gen_buses = [generators[g].bus_idx for g in keys(generators)]
+    f.gen_buses = [g.bus_idx for g in generators]
     for (i,b) in enumerate(buses)
       if b.is_root
         f.root_bus = i
@@ -141,7 +142,7 @@ end
 
 function load_feeder(datadir)
   # READ RAW DATA
-  println("Reading Feeder Data from $(datadir)")
+  println(">>>>> Reading feeder data from $(datadir)")
 
   nodes_raw = CSV.read("$datadir/nodes.csv")
   sum(nonunique(nodes_raw, :index)) != 0 ? warn("Ambiguous Node Indices") : nothing
@@ -242,7 +243,6 @@ function change_load_same_pf(α)
 
    return buses
 end
-
 
 function add_generator(index, bus, g_P_max, g_Q_max, cost)
     newg = Generator(index, bus, g_P_max, g_Q_max)
