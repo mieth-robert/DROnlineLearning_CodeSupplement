@@ -1,4 +1,4 @@
 results/
 ml_example/
-*-sublime-project
-*sublime-workspace
+*.sublime-project
+*.sublime-workspace

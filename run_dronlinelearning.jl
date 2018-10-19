@@ -12,21 +12,26 @@
 # +++++
 # Devnotes: ---
 
-cd("codejl")
-
 # Invocing Julia Packages
 using JuMP  # Optimization Package
 using Mosek # Solver Interface, requires Mosek to be installed
 using CSV, DataFrames   # For Handling Data
 
-include("input.jl")
+include("src/input.jl")
 
 #1 Load case settings
-    # TODO
-datadir  = "../data/basecase_lv_noneg"
+casefile = length(ARGS) > 0 ? ARGS[1] : "cases/testcase.jl"
+try
+    a, b = include(casefile)
+catch e
+    println(">>>>> Error reading the case file")
+    println(e)
+    exit()
+end
+println("Runnig Case $(casefile)")
 
 #2 Load Data from file
 # Feeder Data
 feeder = load_feeder(datadir)
-
 # Price Data
+ws_prices, timestamps = read_price_data(price_file)

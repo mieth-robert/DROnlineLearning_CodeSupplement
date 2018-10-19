@@ -218,11 +218,18 @@ function load_feeder(datadir)
   return feeder
 end
 
+function read_price_data(filename)
+   data_df = CSV.read(filename, header=3)
+   prices = data_df[:price]
+   timestamps = data_df[:t]
+   return prices, timestamps
+end
+
 
 function change_load_same_pf(α)
 # always uses the GLOBAL BUSES as reference
-  buses = deepcopy(BUSES)
-  for i in keys(buses)
+   buses = deepcopy(BUSES)
+   for i in keys(buses)
       P = buses[i].d_P
       Q = buses[i].d_Q
       PF = P/sqrt(P^2 + Q^2)
