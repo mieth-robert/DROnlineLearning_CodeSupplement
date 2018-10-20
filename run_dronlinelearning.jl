@@ -16,7 +16,7 @@
 using JuMP  # Optimization Package
 using Mosek # Solver Interface, requires Mosek to be installed
 using CSV, DataFrames   # For Handling Data
-using Distributions
+using Distributions # For error generating Distribution
 using LightGraphs # Utilizing some predefined algorithms
 
 include("src/input.jl")
@@ -92,18 +92,18 @@ x_det(λ) = (β1 .* λ) .+ β0
 # Second order moment matrix
 Ω_true = [Σ_true+μ_true*μ_true' μ_true; μ_true' 1]
 
-# Result storages
-x_hist = []
-λ_hist = []
+# Result storages for regression
+x_hist = Dict()
+λ_hist = Dict()
+β1_hat_hist = Dict()
+β0_hat_hist = Dict()
+# Result storages for OPF results
 results_hist = []
 results_oracle_hist = []
 results_varorc_hist = []
 results_psorc_hist = []
-lines_hist = []
-lines_oracle_hist = []
-β1_hat_hist = []
-β0_hat_hist = []
 status_hist = DataFrame(t=[], orac=[], varorc=[], psorc=[], learning=[])
+# Result storages for PF results
 outcome_hist = []
 outcome_oracle_hist = []
 outcome_varorc_hist = []
@@ -112,16 +112,155 @@ outcome_psorc_hist = []
 Σ_oracle = Σ_true
 μ_oracle = μ_true
 Ω_oracle = Ω_true
-wholesale = 80
 
+@assert length(β0_init) == n_buses
+@assert length(β1_init) == n_buses
 
 println(">>>>> Starting loop for $(t_total) timestep$(t_total>1?"s":"")")
 for t in 1:t_total
+    println(">>>>> Running for t=$t (of $t_total)")
 
-    x = zeros(n_buses)
-    result, status, solvetime = run_demand_response_opf(feeder, β1, β0, wholesale, μ_oracle, Σ_oracle, Ω_true;
-                            α=α, x_in=x, model_type="opf", robust_cc=false, enable_flow_constraints=true,
+    # Regression phase
+    β0_hat_t = Dict("learning" => zeros(n_buses), "varorc" => zeros(n_buses), "psorc" => β0, "oracle" => β0)
+    β1_hat_t = Dict("learning" => zeros(n_buses), "varorc" => zeros(n_buses), "psorc" => β0, "oracle" => β0)
+    # Only 'learning' and 'varorc' need to estimate the prices
+    for info in ["learning", "varorc"]
+        if t <= t_init || info ∉ keys(λ_hist)
+            # Use assumption for inital timesteps
+            β0_hat_t[info] = β0_init
+            β1_hat_t[info] = β1_init
+        else
+            # Perform Regression with the historical data
+            for i in 1:n_buses
+                # Matrix implementation
+                # fisher = [sum(λ_hist[info][i,k]^2 for k in 1:T)  sum(λ_hist[info][i,:]); sum(λ_hist[info][i,:]) T]
+                # obs = [sum(λ_hist[info][i,:] .* x_hist[info][i,:]) ; sum(x_hist[info][i,:])]
+                # est = (fisher^-1)*obs
+                # β1_hat_t[info][i] = est[1]
+                # β0_hat_t[info][i] = est[2]
+
+                # Explicit implementation (generally faster)
+                λ_mean = mean(λ_hist[info][i,:])
+                x_mean = mean(x_hist[info][i,:])
+                β1_hat_t[info][i] = sum((λ_hist[info][i,:] .- λ_mean) .* (x_hist[info][i,:] .- x_mean))/sum((λ_hist[info][i,:] .- λ_mean).^2)
+                β0_hat_t[info][i] = x_mean - β1_hat_t[info][i]*λ_mean
+
+                # if regression was not viable in t use estimate from last iteration
+                isnan(β1_hat_t[info][i]) && (β1_hat_t[info][i] = β1_hat_hist[info][i,t-1])
+                isnan(β0_hat_t[info][i]) && (β1_hat_t[info][i] = β0_hat_hist[info][i,t-1])
+            end
+        end
+        # Truncate
+        β1_min = 1/10000
+        β1_hat_t[info] = max.(β1_hat_t[info], β1_min)
+        β0_hat_t[info] = max.(β1_hat_t[info], 0)
+
+        # Store
+        if t == 1
+            β1_hat_hist[info] = β1_hat_t[info]
+            β0_hat_hist[info] = β0_hat_t[info]
+        else
+            temp = pop!(β1_hat_hist, info)
+            β1_hat_hist[info] = hcat(temp, β1_hat_t[info])
+            temp = pop!(β0_hat_hist, info)
+            β0_hat_hist[info] = hcat(temp, β0_hat_t[info])
+        end
+    end
+
+    # Store oracle values
+    for info in ["oracle", "psorc"]
+        if t == 1
+            β1_hat_hist[info] = β1_hat_t[info]
+            β0_hat_hist[info] = β0_hat_t[info]
+        else
+            temp = pop!(β1_hat_hist, info)
+            β1_hat_hist[info] = hcat(temp, β1_hat_t[info])
+            temp = pop!(β0_hat_hist, info)
+            β0_hat_hist[info] = hcat(temp, β0_hat_t[info])
+        end
+    end
+
+    # Estimate Error variance
+    μ_hat = Dict("learning" => zeros(n_buses), "oracle" => zeros(n_buses), "varorc" => zeros(n_buses), "psorc" => zeros(n_buses))
+    Σ_hat = Dict("learning" => zeros(n_buses, n_buses), "oracle" => zeros(n_buses, n_buses), "varorc" => zeros(n_buses, n_buses), "psorc" => zeros(n_buses, n_buses))
+    Ω_hat = Dict("learning" => zeros(n_buses+1, n_buses+1), "oracle" => zeros(n_buses+1, n_buses+1), "varorc" => zeros(n_buses+1, n_buses+1), "psorc" => zeros(n_buses+1, n_buses+1))
+    # Only 'learning' and 'psorc' need to estimate the covariance matrix
+    for info in ["learning", "psorc"]
+        if t <= 2 || info ∉ keys(λ_hist)
+            # No residuals in first round
+            μ_hat[info] = zeros(n_buses)
+            Σ_hat[info] = zeros(n_buses, n_buses)
+        else
+            # x_hats resulting from parameter estimates
+            x_hat = []
+            available_samples = size(λ_hist[info], 2)
+            for s in 1:available_samples
+                x_hat_t = β1_hat_t[info] .* λ_hist[info][:,s] .+ β0_hat_t[info]
+                if s == 1
+                    x_hat = x_hat_t
+                else
+                    x_hat = hcat(x_hat, x_hat_t)
+                end
+            end
+
+            # Resulting residuals
+            ϵ_hat = x_hist[info] - x_hat
+            # ϵ_hat = map(x -> abs(x)>num_thershold ? x : 0., ϵ_hat)   # Get rid of numerical noise
+            μ_hat[info] = [mean(ϵ_hat[i,:]) for i in 1:n_buses]
+            # μ_hat = map(x -> abs(x)>num_thershold ? x : 0., μ_hat) # Get rid of numerical noise
+            # var_e_hat = [var(ϵ_hat[i,:]) for i in 1:n_buses]
+            # var_e_hat = map(x -> abs(x)>num_thershold ? x : 0., var_e_hat)
+            Σ_hat[info] = cov(ϵ_hat') # Emp Covarince
+        end
+        # Second order moment matrix of residuals
+        Ω_hat[info] = [Σ_hat[info]+μ_hat[info]*μ_hat[info]' μ_hat[info]; μ_hat[info]' 1] # Second order moment Matrix
+    end
+
+    # Get wholesale price
+    wholesale = ws_prices[t]
+
+    # Run the OPF models
+    result_learning, status_learning, solvetime_learning = run_demand_response_opf(feeder, β1_hat_t["learning"], β0_hat_t["learning"],
+                            wholesale, μ_hat["learning"], Σ_hat["learning"], Ω_hat["learning"];
+                            α=α, x_in=[], model_type="x_opf", robust_cc=false, enable_flow_constraints=true,
                             enable_voltage_constraints=true, enable_generation_constraints=true)
-    display(result)
 
+    result_oracle, status_oracle, solvetime_oracle = run_demand_response_opf(feeder, β1, β0,
+                            wholesale, μ_oracle, Σ_oracle, Ω_oracle;
+                            α=α, x_in=[], model_type="x_opf", robust_cc=false, enable_flow_constraints=true,
+                            enable_voltage_constraints=true, enable_generation_constraints=true)
+
+
+    display(result_oracle)
+
+    # Get and safe the price results
+    λ_t_learning = max.(result_learning[:lambda],0)
+    if t == 1
+        λ_hist["learning"] = λ_t_learning
+    else
+        temp = pop!(λ_hist, "learning")
+        λ_hist["learning"] = hcat(temp, λ_t_learning)
+    end
+    # λ_t_oracle = results_oracle[:lambda]
+    # λ_t_oracle = map(x -> x < 0 ? 0 : x, λ_t_oracle)
+
+    # Observe an reaction (so that error is the same for all)
+    ϵ_t = get_noise(ϵ_mvdist, no_load_buses)
+    x_obs_learning = x_det(λ_t_learning) .+ ϵ_t
+    # x_obs_oracle = x_det(λ_t_oracle) .+ ϵ_t
+    # x_obs_varorc = x_det(λ_t_varorc) .+ ϵ_t
+    # x_obs_psorc = x_det(λ_t_psorc) .+ ϵ_t
+
+    if t == 1
+        x_hist["learning"] = x_obs_learning
+    else
+        temp = pop!(x_hist, "learning")
+        x_hist["learning"] = hcat(temp, x_obs_learning)
+    end
+# repeat
 end
+
+
+d = Dict("a"=> [1,2], "b" => 1)
+pop!(d, "b")
+d["b"] = "hallo"

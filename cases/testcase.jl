@@ -9,7 +9,7 @@ function return_case_data()
     price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
-    t_total = 1
+    t_total = 10
     # number of inital timesteps (>=2)
     t_init = 2
 
@@ -37,7 +37,7 @@ function return_case_data()
     relative_std = 0.1
     # Partizipation Factor
     α = zeros(15)
-    # α[1] = 1
+    α[1] = 1
     # Correlation settings
     max_correlation = 0
     # Factor for higher load
