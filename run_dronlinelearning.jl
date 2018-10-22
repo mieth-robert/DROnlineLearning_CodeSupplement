@@ -19,6 +19,8 @@ using CSV, DataFrames   # For Handling Data
 using Distributions # For error generating Distribution
 using LightGraphs # Utilizing some predefined algorithms
 
+println(">>>>> Current pwd=$(pwd())")
+
 include("src/input.jl")
 include("src/model_definitions.jl")
 include("src/tools.jl")
