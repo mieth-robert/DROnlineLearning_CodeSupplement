@@ -2,7 +2,7 @@
 
 function return_case_data()
     # Name of the case
-    case_id = "no_network"
+    case_id = "only_flow"
     exp_id = "fullrun1"
 
     # Specify data files
@@ -18,7 +18,7 @@ function return_case_data()
     robust_cc = true
     enable_voltage_constraints = false
     enable_generation_constraints = false
-    enable_flow_constraints = false
+    enable_flow_constraints = true
     compare_to_detopf = true
     run_power_flow_test = true
 
