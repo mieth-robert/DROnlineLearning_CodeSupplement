@@ -139,6 +139,15 @@ type FeederTopo
     return f
   end
 end
+function set_root_feeder_cost(feeder, cost)
+  r = feeder.root_bus
+  if r in feeder.gen_buses
+    feeder.buses[r].generator.cost = cost
+  else
+    println("!!! Could not set root feeder cost. No generator at root")
+  end
+end
+
 
 function load_feeder(datadir)
   # READ RAW DATA

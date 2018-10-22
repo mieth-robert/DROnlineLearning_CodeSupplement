@@ -9,7 +9,7 @@ function return_case_data()
     price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
-    t_total = 10
+    t_total = 400
     # number of inital timesteps (>=2)
     t_init = 2
 

@@ -18,7 +18,7 @@
 # α : if α adds up to 1 then it is used for the error control, if not alpha will be optimized#
 # robust_cc : if true use robust chance constraints, if false use deterministic constraints
 
-function run_demand_response_opf(feeder, β1, β0, wholesale, μ, Σ, Ω;
+function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
      α=[], x_in=[], model_type="x_opf", robust_cc=true, enable_flow_constraints=true,
      enable_voltage_constraints=true, enable_generation_constraints=true)
 
@@ -234,7 +234,7 @@ function run_demand_response_opf(feeder, β1, β0, wholesale, μ, Σ, Ω;
         @expression(m, drCost_split, sum(nlc[b] + sum(dr_mcs[s][b]*x_opt_split[s,b] for s in 1:n_splits) for b in 1:n_buses))
     end
 
-    buses[root_bus].generator.cost = wholesale
+    # buses[root_bus].generator.cost = wholesale
     mu_sum = sum(μ)
     @expression(m, genCost_lin, sum(buses[b].generator.cost * gp[b] for b in gen_buses))
     @expression(m, drCost, sum((x_opt[b] + μ[b]) * (x_opt[b] - β0[b])/β1[b] for b in bus_set))
@@ -272,8 +272,8 @@ function run_demand_response_opf(feeder, β1, β0, wholesale, μ, Σ, Ω;
     result_df[:fP] = fP_results
     result_df[:fQ] = fQ_results
 
-    sort!(result_df, :bus) # THIS IS AN IMPORTANT LINE
-
+    sort!(result_df, :bus) 
+    
     return result_df, status, solvetime
 
 end

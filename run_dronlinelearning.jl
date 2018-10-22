@@ -22,6 +22,7 @@ using LightGraphs # Utilizing some predefined algorithms
 include("src/input.jl")
 include("src/model_definitions.jl")
 include("src/tools.jl")
+include("src/test_power_flow.jl")
 
 if length(ARGS) == 0 println(">>>>> No case argument provided. Proceeding with default testcase") end
 
@@ -98,16 +99,16 @@ x_hist = Dict()
 β1_hat_hist = Dict()
 β0_hat_hist = Dict()
 # Result storages for OPF results
-results_hist = []
-results_oracle_hist = []
-results_varorc_hist = []
-results_psorc_hist = []
-status_hist = DataFrame(t=[], orac=[], varorc=[], psorc=[], learning=[])
+result_hist = Dict()
+status_hist = DataFrame(t=[], learning=[], oracle=[], varorc=[], psorc=[])
+solvetime_hist = DataFrame(t=[], learning=[], oracle=[], varorc=[], psorc=[])
 # Result storages for PF results
-outcome_hist = []
-outcome_oracle_hist = []
-outcome_varorc_hist = []
-outcome_psorc_hist = []
+outcome_hist = Dict()
+
+# Create files for results storage
+timestamp = Dates.format(Dates.now(), "mm-dd_HHMM")
+results_path = "results/$timestamp/$case_id"
+mkpath(results_path)
 
 Σ_oracle = Σ_true
 μ_oracle = μ_true
@@ -117,6 +118,7 @@ outcome_psorc_hist = []
 @assert length(β1_init) == n_buses
 
 println(">>>>> Starting loop for $(t_total) timestep$(t_total>1?"s":"")")
+tic()
 for t in 1:t_total
     println(">>>>> Running for t=$t (of $t_total)")
 
@@ -218,49 +220,90 @@ for t in 1:t_total
 
     # Get wholesale price
     wholesale = ws_prices[t]
+    set_root_feeder_cost(feeder, wholesale)
 
     # Run the OPF models
-    result_learning, status_learning, solvetime_learning = run_demand_response_opf(feeder, β1_hat_t["learning"], β0_hat_t["learning"],
-                            wholesale, μ_hat["learning"], Σ_hat["learning"], Ω_hat["learning"];
+    result = Dict(); status = Dict(); solvetime = Dict()
+    println(">>>>> Starting Learning Model")
+    result["learning"], status["learning"], solvetime["learning"] = run_demand_response_opf(feeder, β1_hat_t["learning"], β0_hat_t["learning"],
+                            μ_hat["learning"], Σ_hat["learning"], Ω_hat["learning"];
                             α=α, x_in=[], model_type="x_opf", robust_cc=false, enable_flow_constraints=true,
                             enable_voltage_constraints=true, enable_generation_constraints=true)
 
-    result_oracle, status_oracle, solvetime_oracle = run_demand_response_opf(feeder, β1, β0,
-                            wholesale, μ_oracle, Σ_oracle, Ω_oracle;
+    println(">>>>> Starting Oracle Model")
+    result["oracle"], status["oracle"], solvetime["oracle"] = run_demand_response_opf(feeder, β1, β0,
+                            μ_oracle, Σ_oracle, Ω_oracle;
                             α=α, x_in=[], model_type="x_opf", robust_cc=false, enable_flow_constraints=true,
                             enable_voltage_constraints=true, enable_generation_constraints=true)
 
+    println(">>>>> Starting Ps-oracle Model")
+    result["psorc"], status["psorc"], solvetime["psorc"] = run_demand_response_opf(feeder, β1, β0,
+                            μ_hat["psorc"], Σ_hat["psorc"], Ω_hat["psorc"];
+                            α=α, x_in=[], model_type="x_opf", robust_cc=false, enable_flow_constraints=true,
+                            enable_voltage_constraints=true, enable_generation_constraints=true)
 
-    display(result_oracle)
+    println(">>>>> Starting Var-oracle Model")
+    result["varorc"], status["varorc"], solvetime["varorc"] = run_demand_response_opf(feeder, β1_hat_t["varorc"], β0_hat_t["varorc"],
+                            μ_oracle, Σ_oracle, Ω_oracle;
+                            α=α, x_in=[], model_type="x_opf", robust_cc=false, enable_flow_constraints=true,
+                            enable_voltage_constraints=true, enable_generation_constraints=true)
 
-    # Get and safe the price results
-    λ_t_learning = max.(result_learning[:lambda],0)
-    if t == 1
-        λ_hist["learning"] = λ_t_learning
-    else
-        temp = pop!(λ_hist, "learning")
-        λ_hist["learning"] = hcat(temp, λ_t_learning)
-    end
-    # λ_t_oracle = results_oracle[:lambda]
-    # λ_t_oracle = map(x -> x < 0 ? 0 : x, λ_t_oracle)
-
-    # Observe an reaction (so that error is the same for all)
+   
+    outcome = Dict()
+    # Create vector of errors that is the same for all cases
     ϵ_t = get_noise(ϵ_mvdist, no_load_buses)
-    x_obs_learning = x_det(λ_t_learning) .+ ϵ_t
-    # x_obs_oracle = x_det(λ_t_oracle) .+ ϵ_t
-    # x_obs_varorc = x_det(λ_t_varorc) .+ ϵ_t
-    # x_obs_psorc = x_det(λ_t_psorc) .+ ϵ_t
+    for info in ["learning", "oracle", "psorc", "varorc"]
+        info in keys(result) || continue
+        
+         # Get and save the price results
+        λ_t = max.(result[info][:lambda],0)
+        if t == 1
+            λ_hist[info] = λ_t
+        else
+            temp = pop!(λ_hist, info)
+            λ_hist[info] = hcat(temp, λ_t)
+        end
+    
+        # Observe an reaction disturbed by the error vector
+        x_obs = x_det(λ_t) .+ ϵ_t
 
-    if t == 1
-        x_hist["learning"] = x_obs_learning
-    else
-        temp = pop!(x_hist, "learning")
-        x_hist["learning"] = hcat(temp, x_obs_learning)
+        # Save the reactions
+        if t == 1
+            x_hist[info] = x_obs
+        else
+            temp = pop!(x_hist, info)
+            x_hist[info] = hcat(temp, x_obs)
+        end
+
+        # Run power flow using the true reactions
+        outcome = run_power_flow_dr(feeder, result[info], x_obs)
+
+        # Save to history
+        result[info][:t] = fill(t, nrow(result[info]))
+        if t==1 
+            result_hist[info] = result[info]
+            outcome_hist[info] = outcome
+        else
+            result_hist[info] = vcat(result_hist[info], result[info])
+            outcome_hist[info] = vcat(outcome_hist[info], outcome)
+        end
+        # Save to hdd
+        CSV.write("$(results_path)/results_$(info).csv", result[info], append=!(t==1))
+        CSV.write("$(results_path)/outcomes_$(info).csv", outcome, append=!(t==1))
+
     end
+    push!(status_hist, [t, status["learning"], status["oracle"], status["varorc"], status["psorc"]])
+    push!(solvetime_hist, [t, solvetime["learning"], solvetime["oracle"], solvetime["varorc"], solvetime["psorc"]])
+
 # repeat
 end
+toc()
+display(status_hist)
 
-
-d = Dict("a"=> [1,2], "b" => 1)
-pop!(d, "b")
-d["b"] = "hallo"
+# save to hdd
+CSV.write("$(results_path)/status.csv", status_hist)
+CSV.write("$(results_path)/solvetime.csv", solvetime_hist)
+# for info in ["learning", "oracle", "psorc", "varorc"]
+#     CSV.write("$(results_path)/results_$(info).csv", result_hist[info])
+#     CSV.write("$(results_path)/outcomes_$(info).csv", outcome_hist[info])
+# end
