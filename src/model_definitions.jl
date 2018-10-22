@@ -86,8 +86,7 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
         @variable(m, x_opt[b=1:n_buses] >=0) # demand reduction at bus
         @variable(m, x_opt_split[1:n_splits, 1:n_buses] >= 0) # For piecewise linear objective
     elseif model_type == "opf"
-        @assert length(x_in) == n_buses
-        x_opt = x_in
+        x_opt = (length(x_in) == n_buses) ? x_in : zeros(n_buses) 
     else
         println("Unkwon Model type")
         return false
@@ -125,6 +124,7 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
     buses_without_generation = setdiff(bus_set, gen_buses)
     @constraint(m, [b=buses_without_generation], gp[b] == 0)
     @constraint(m, [b=buses_without_generation], gq[b] == 0)
+
 
     if model_type == "x_opf"
         @constraint(m, [b=bus_set], buses[b].d_P - x_opt[b] >= 0)
@@ -234,7 +234,6 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
         @expression(m, drCost_split, sum(nlc[b] + sum(dr_mcs[s][b]*x_opt_split[s,b] for s in 1:n_splits) for b in 1:n_buses))
     end
 
-    # buses[root_bus].generator.cost = wholesale
     mu_sum = sum(μ)
     @expression(m, genCost_lin, sum(buses[b].generator.cost * gp[b] for b in gen_buses))
     @expression(m, drCost, sum((x_opt[b] + μ[b]) * (x_opt[b] - β0[b])/β1[b] for b in bus_set))
@@ -256,7 +255,8 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
     result_df = DataFrame(bus=Any[], dP=Any[], gP=[], gQ=[], alpha=[], x_opt=Any[], mp=Any[], lambda=Any[], v_real=[], objective=Any[])
     for b in 1:n_buses
         xb = model_type == "x_opf" ? getvalue(x_opt[b]) : x_opt[b]
-        λb = abs(xb)>1e-10 ? (xb - β0[b])/β1[b] : 0
+        # λb = abs(xb)>1e-10 ? ((xb - β0[b]) - μ[b])/β1[b] : 0
+        λb = (xb - β0[b] - μ[b])/β1[b]
         v_real = sqrt(getvalue(v[b]))
         alpha = optimize_alpha ?  getvalue(α[b]) : α[b]
         res = [b, buses[b].d_P, getvalue(gp[b]), getvalue(gq[b]), alpha, xb, getdual(enerbal_P[b]), λb, v_real, getobjectivevalue(m)]
@@ -273,7 +273,7 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
     result_df[:fQ] = fQ_results
 
     sort!(result_df, :bus) 
-    
+
     return result_df, status, solvetime
 
 end

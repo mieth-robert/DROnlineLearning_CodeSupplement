@@ -29,7 +29,7 @@ if length(ARGS) == 0 println(">>>>> No case argument provided. Proceeding with d
 #1 Load case settings
 casefile = length(ARGS) > 0 ? ARGS[1] : "cases/testcase.jl"
 
-case_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints,
+case_id, exp_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints,
         enable_generation_constraints, enable_flow_constraints, run_power_flow_test, v_root, tariff, η_v,
         η_g, relative_std, α, max_correlation, β1_set, β0_set, β1_init, β0_init = include(casefile)
 println(">>>>> Succesfully loaded $(case_id)")
@@ -41,6 +41,9 @@ feeder = load_feeder(datadir)
 ws_prices, timestamps = read_price_data(price_file)
 
 #3 Prepare everything for simulation
+t_total == 0 && (t_total = length(ws_prices))
+
+# Feeder Data
 buses = feeder.buses
 lines = feeder.lines
 n_buses = feeder.n_buses
@@ -104,10 +107,10 @@ status_hist = DataFrame(t=[], learning=[], oracle=[], varorc=[], psorc=[])
 solvetime_hist = DataFrame(t=[], learning=[], oracle=[], varorc=[], psorc=[])
 # Result storages for PF results
 outcome_hist = Dict()
+var_hat_hist = []
 
 # Create files for results storage
-timestamp = Dates.format(Dates.now(), "mm-dd_HHMM")
-results_path = "results/$timestamp/$case_id"
+results_path = "results/$(exp_id == "" ? Dates.format(Dates.now(), "mm-dd_HHMM") : exp_id)/$case_id"
 mkpath(results_path)
 
 Σ_oracle = Σ_true
@@ -124,7 +127,7 @@ for t in 1:t_total
 
     # Regression phase
     β0_hat_t = Dict("learning" => zeros(n_buses), "varorc" => zeros(n_buses), "psorc" => β0, "oracle" => β0)
-    β1_hat_t = Dict("learning" => zeros(n_buses), "varorc" => zeros(n_buses), "psorc" => β0, "oracle" => β0)
+    β1_hat_t = Dict("learning" => zeros(n_buses), "varorc" => zeros(n_buses), "psorc" => β1, "oracle" => β1)
     # Only 'learning' and 'varorc' need to estimate the prices
     for info in ["learning", "varorc"]
         if t <= t_init || info ∉ keys(λ_hist)
@@ -149,13 +152,13 @@ for t in 1:t_total
 
                 # if regression was not viable in t use estimate from last iteration
                 isnan(β1_hat_t[info][i]) && (β1_hat_t[info][i] = β1_hat_hist[info][i,t-1])
-                isnan(β0_hat_t[info][i]) && (β1_hat_t[info][i] = β0_hat_hist[info][i,t-1])
+                isnan(β0_hat_t[info][i]) && (β0_hat_t[info][i] = β0_hat_hist[info][i,t-1])
             end
         end
         # Truncate
         β1_min = 1/10000
         β1_hat_t[info] = max.(β1_hat_t[info], β1_min)
-        β0_hat_t[info] = max.(β1_hat_t[info], 0)
+        # β0_hat_t[info] = max.(β0_hat_t[info], 0)
 
         # Store
         if t == 1
@@ -227,29 +230,27 @@ for t in 1:t_total
     println(">>>>> Starting Learning Model")
     result["learning"], status["learning"], solvetime["learning"] = run_demand_response_opf(feeder, β1_hat_t["learning"], β0_hat_t["learning"],
                             μ_hat["learning"], Σ_hat["learning"], Ω_hat["learning"];
-                            α=α, x_in=[], model_type="x_opf", robust_cc=false, enable_flow_constraints=true,
+                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=true,
                             enable_voltage_constraints=true, enable_generation_constraints=true)
 
     println(">>>>> Starting Oracle Model")
     result["oracle"], status["oracle"], solvetime["oracle"] = run_demand_response_opf(feeder, β1, β0,
                             μ_oracle, Σ_oracle, Ω_oracle;
-                            α=α, x_in=[], model_type="x_opf", robust_cc=false, enable_flow_constraints=true,
+                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=true,
                             enable_voltage_constraints=true, enable_generation_constraints=true)
 
     println(">>>>> Starting Ps-oracle Model")
     result["psorc"], status["psorc"], solvetime["psorc"] = run_demand_response_opf(feeder, β1, β0,
                             μ_hat["psorc"], Σ_hat["psorc"], Ω_hat["psorc"];
-                            α=α, x_in=[], model_type="x_opf", robust_cc=false, enable_flow_constraints=true,
+                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=true,
                             enable_voltage_constraints=true, enable_generation_constraints=true)
 
     println(">>>>> Starting Var-oracle Model")
     result["varorc"], status["varorc"], solvetime["varorc"] = run_demand_response_opf(feeder, β1_hat_t["varorc"], β0_hat_t["varorc"],
                             μ_oracle, Σ_oracle, Ω_oracle;
-                            α=α, x_in=[], model_type="x_opf", robust_cc=false, enable_flow_constraints=true,
+                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=true,
                             enable_voltage_constraints=true, enable_generation_constraints=true)
 
-   
-    outcome = Dict()
     # Create vector of errors that is the same for all cases
     ϵ_t = get_noise(ϵ_mvdist, no_load_buses)
     for info in ["learning", "oracle", "psorc", "varorc"]
@@ -280,6 +281,7 @@ for t in 1:t_total
 
         # Save to history
         result[info][:t] = fill(t, nrow(result[info]))
+        outcome[:t] = fill(t, nrow(outcome))
         if t==1 
             result_hist[info] = result[info]
             outcome_hist[info] = outcome
@@ -288,8 +290,8 @@ for t in 1:t_total
             outcome_hist[info] = vcat(outcome_hist[info], outcome)
         end
         # Save to hdd
-        CSV.write("$(results_path)/results_$(info).csv", result[info], append=!(t==1))
-        CSV.write("$(results_path)/outcomes_$(info).csv", outcome, append=!(t==1))
+        # CSV.write("$(results_path)/results_$(info).csv", result[info], append=!(t==1))
+        # CSV.write("$(results_path)/outcomes_$(info).csv", outcome, append=!(t==1))
 
     end
     push!(status_hist, [t, status["learning"], status["oracle"], status["varorc"], status["psorc"]])
@@ -301,9 +303,20 @@ toc()
 display(status_hist)
 
 # save to hdd
+for info in ["learning", "oracle", "psorc", "varorc"]
+    CSV.write("$(results_path)/results_$(info).csv", result_hist[info])
+    CSV.write("$(results_path)/outcomes_$(info).csv", outcome_hist[info])
+    beta_0_hist_df = DataFrame()
+    beta_1_hist_df = DataFrame()
+    for b in 1:n_buses
+        beta_0_hist_df[Symbol("bus_$b")] = β0_hat_hist[info][b,:]
+        beta_1_hist_df[Symbol("bus_$b")] = β1_hat_hist[info][b,:]
+    end
+    CSV.write("$(results_path)/beta_1_hat_$(info).csv", beta_1_hist_df)
+    CSV.write("$(results_path)/beta_0_hat_$(info).csv", beta_0_hist_df)
+end  
+
 CSV.write("$(results_path)/status.csv", status_hist)
 CSV.write("$(results_path)/solvetime.csv", solvetime_hist)
-# for info in ["learning", "oracle", "psorc", "varorc"]
-#     CSV.write("$(results_path)/results_$(info).csv", result_hist[info])
-#     CSV.write("$(results_path)/outcomes_$(info).csv", outcome_hist[info])
-# end
+wholesale_df = DataFrame(wholesale=ws_prices[1:t_total])
+CSV.write("$(results_path)/wholesale_prices.csv", wholesale_df)

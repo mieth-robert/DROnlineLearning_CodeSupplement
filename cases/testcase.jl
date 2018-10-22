@@ -3,6 +3,7 @@
 function return_case_data()
     # Name of the case
     case_id = "testcase"
+    exp_id = "C"
 
     # Specify data files
     datadir  = "data/feeder_data/basecase_lv_noneg"
@@ -26,7 +27,7 @@ function return_case_data()
     # Costumer Tariff
     tariff = 25
     # Price for demand Response
-    dr_price = 100
+    dr_price = 150
     # Inital dr price assumption
     dr_price_assumption = 100
     # Voltage Security margin
@@ -49,7 +50,7 @@ function return_case_data()
     β1_init = ones(15)./dr_price_assumption
     β0_init = zeros(15)
 
-    return case_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints, enable_generation_constraints, enable_flow_constraints, run_power_flow_test, v_root, tariff, η_v, η_g, relative_std, α, max_correlation, β1_set, β0_set, β1_init, β0_init
+    return case_id, exp_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints, enable_generation_constraints, enable_flow_constraints, run_power_flow_test, v_root, tariff, η_v, η_g, relative_std, α, max_correlation, β1_set, β0_set, β1_init, β0_init
 end
 
 return_case_data()

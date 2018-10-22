@@ -79,3 +79,27 @@ function create_random_init_data(t_init, no_load_buses, mvdist; lambda_max=100)
     end
     return λ_hist, x_hist
 end
+
+function progress(t, max_t)
+    max_bars = 50
+    r = t/max_t
+    n = Int(floor(r*max_bars))
+    p = Int(floor(r*100))
+    bar = repeat("=", n)
+    res = repeat(" ", max_bars - n)
+    out = "[" * bar * res * "] " * string(p) * "%"
+    (t == max_t ? print("\r" * out * "\n") : print("\r" * out))
+    flush(STDOUT)
+end
+
+
+function progress(t, max_t; case=0)
+    n_cols = 100
+    todo_sign = "."
+    done_sign = "x"
+    out = "["
+    row = 1
+    while max_t-(row*n_cols) > 0
+        out *= repeat(todo_sign, n_cols) * "\n"
+    out *= "]"
+end
