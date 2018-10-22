@@ -19,7 +19,7 @@ function return_case_data()
     enable_voltage_constraints = true
     enable_generation_constraints = true
     enable_flow_constraints = true
-    compare_to_detopf = false
+    compare_to_detopf = true
     run_power_flow_test = true
 
     # Voltage at root bus

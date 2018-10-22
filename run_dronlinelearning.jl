@@ -103,6 +103,7 @@ x_hist = Dict()
 β0_hat_hist = Dict()
 # Result storages for OPF results
 result_hist = Dict()
+compare_to_detopf && (result_detopf_hist = Dict())
 status_hist = DataFrame(t=[], learning=[], oracle=[], varorc=[], psorc=[])
 solvetime_hist = DataFrame(t=[], learning=[], oracle=[], varorc=[], psorc=[])
 # Result storages for PF results
@@ -297,6 +298,14 @@ for t in 1:t_total
             result_hist[info] = vcat(result_hist[info], result[info])
             outcome_hist[info] = vcat(outcome_hist[info], outcome)
         end
+        if compare_to_detopf
+            result_detopf[:t] = fill(t, nrow(result[info]))
+            if t==1 
+                result_detopf_hist[info] = result_detopf
+            else
+                result_detopf_hist[info] = vcat(result_detopf_hist[info], result_detopf)
+            end
+        end
         # Save to hdd
         # CSV.write("$(results_path)/results_$(info).csv", result[info], append=!(t==1))
         # CSV.write("$(results_path)/outcomes_$(info).csv", outcome, append=!(t==1))
@@ -311,7 +320,7 @@ toc()
 display(status_hist)
 
 # save to hdd
-println(">>>>> Saving results")
+println("\n>>>>> Saving results")
 for info in ["learning", "oracle", "psorc", "varorc"]
     CSV.write("$(results_path)/results_$(info).csv", result_hist[info])
     CSV.write("$(results_path)/outcomes_$(info).csv", outcome_hist[info])
@@ -323,7 +332,11 @@ for info in ["learning", "oracle", "psorc", "varorc"]
     end
     CSV.write("$(results_path)/beta_1_hat_$(info).csv", beta_1_hist_df)
     CSV.write("$(results_path)/beta_0_hat_$(info).csv", beta_0_hist_df)
+    if compare_to_detopf
+        CSV.write("$(results_path)/results_detopf_$(info).csv", result_detopf_hist[info])
+    end
 end  
+
 
 CSV.write("$(results_path)/status.csv", status_hist)
 CSV.write("$(results_path)/solvetime.csv", solvetime_hist)
