@@ -1,6 +1,4 @@
 function run_power_flow_dr(feeder, result_df, x_observed)
-
-
     buses = feeder.buses
     lines = feeder.lines
     generators = feeder.generators
@@ -17,18 +15,17 @@ function run_power_flow_dr(feeder, result_df, x_observed)
 
     loads = [buses[b].d_P for b in 1:n_buses]
     pfs = [buses[b].tanphi for b in 1:n_buses]
-    x_expected = result_df[:x_opt]
-    x_error = x_observed - x_expected
-    x_error_sum = sum(x_error)
+    gP_opt = result_df[:gP]
+    gQ_opt = result_df[:gQ]
     α_opt = result_df[:alpha]
     λ_opt = result_df[:lambda]
 
-    gP_opt = result_df[:gP]
-    gQ_opt = result_df[:gQ]
-
     load_after_dr = loads - x_observed
-    gP_balanced = gP_opt .- (α_opt .* x_error_sum)
-    gQ_balanced = gQ_opt .- (α_opt .* sum((x_error.*pfs)))
+    error_sum = sum(load_after_dr) - sum(gP_opt)
+    error_sum_Q = sum(load_after_dr.*pfs) - sum(gQ_opt)
+
+    gP_balanced = gP_opt .+ (α_opt .* error_sum)
+    gQ_balanced = gQ_opt .+ (α_opt .* error_sum_Q)
 
     gen_cost_outcome = sum(gP_balanced[b] * buses[b].generator.cost for b in gen_bus)
     dr_cost_outcome = sum(λ_opt .* x_observed)
@@ -68,7 +65,6 @@ function run_power_flow_dr(feeder, result_df, x_observed)
                 bus=collect(1:n_buses),
                 loads=loads,
                 x_obs=x_observed,
-                x_error=x_error,
                 alpha=α_opt,
                 v_real=sqrt.(v_outcome),
                 v_violation=v_violation,

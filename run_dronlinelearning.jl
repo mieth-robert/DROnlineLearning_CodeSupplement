@@ -30,7 +30,7 @@ if length(ARGS) == 0 println(">>>>> No case argument provided. Proceeding with d
 casefile = length(ARGS) > 0 ? ARGS[1] : "cases/testcase.jl"
 
 case_id, exp_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints,
-        enable_generation_constraints, enable_flow_constraints, run_power_flow_test, v_root, tariff, η_v,
+        enable_generation_constraints, enable_flow_constraints, compare_to_detopf, run_power_flow_test, v_root, tariff, η_v,
         η_g, relative_std, α, max_correlation, β1_set, β0_set, β1_init, β0_init = include(casefile)
 println(">>>>> Succesfully loaded $(case_id)")
 
@@ -230,32 +230,40 @@ for t in 1:t_total
     println(">>>>> Starting Learning Model")
     result["learning"], status["learning"], solvetime["learning"] = run_demand_response_opf(feeder, β1_hat_t["learning"], β0_hat_t["learning"],
                             μ_hat["learning"], Σ_hat["learning"], Ω_hat["learning"];
-                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=true,
-                            enable_voltage_constraints=true, enable_generation_constraints=true)
+                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=enable_flow_constraints,
+                            enable_voltage_constraints=enable_voltage_constraints, enable_generation_constraints=enable_generation_constraints)
 
     println(">>>>> Starting Oracle Model")
     result["oracle"], status["oracle"], solvetime["oracle"] = run_demand_response_opf(feeder, β1, β0,
                             μ_oracle, Σ_oracle, Ω_oracle;
-                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=true,
-                            enable_voltage_constraints=true, enable_generation_constraints=true)
+                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=enable_flow_constraints,
+                            enable_voltage_constraints=enable_voltage_constraints, enable_generation_constraints=enable_generation_constraints)
 
     println(">>>>> Starting Ps-oracle Model")
     result["psorc"], status["psorc"], solvetime["psorc"] = run_demand_response_opf(feeder, β1, β0,
                             μ_hat["psorc"], Σ_hat["psorc"], Ω_hat["psorc"];
-                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=true,
-                            enable_voltage_constraints=true, enable_generation_constraints=true)
+                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=enable_flow_constraints,
+                            enable_voltage_constraints=enable_voltage_constraints, enable_generation_constraints=enable_generation_constraints)
 
     println(">>>>> Starting Var-oracle Model")
     result["varorc"], status["varorc"], solvetime["varorc"] = run_demand_response_opf(feeder, β1_hat_t["varorc"], β0_hat_t["varorc"],
                             μ_oracle, Σ_oracle, Ω_oracle;
-                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=true,
-                            enable_voltage_constraints=true, enable_generation_constraints=true)
+                            α=α, x_in=[], model_type="x_opf", robust_cc=robust_cc, enable_flow_constraints=enable_flow_constraints,
+                            enable_voltage_constraints=enable_voltage_constraints, enable_generation_constraints=enable_generation_constraints)
 
     # Create vector of errors that is the same for all cases
     ϵ_t = get_noise(ϵ_mvdist, no_load_buses)
     for info in ["learning", "oracle", "psorc", "varorc"]
         info in keys(result) || continue
         
+        # Determine system settings from det OPF
+        if compare_to_detopf
+            result_detopf, status_detopf, solvetime_detopf = run_demand_response_opf(feeder, β1, β0,
+                                μ_oracle, Σ_oracle, Ω_oracle;
+                                α=α, x_in=result[info][:x_opt], model_type="opf", robust_cc=false, enable_flow_constraints=true,
+                                enable_voltage_constraints=true, enable_generation_constraints=true)
+        end
+
          # Get and save the price results
         λ_t = max.(result[info][:lambda],0)
         if t == 1
@@ -277,7 +285,7 @@ for t in 1:t_total
         end
 
         # Run power flow using the true reactions
-        outcome = run_power_flow_dr(feeder, result[info], x_obs)
+        outcome = run_power_flow_dr(feeder, (compare_to_detopf ? result_detopf : result[info]), x_obs)
 
         # Save to history
         result[info][:t] = fill(t, nrow(result[info]))
@@ -303,6 +311,7 @@ toc()
 display(status_hist)
 
 # save to hdd
+println(">>>>> Saving results")
 for info in ["learning", "oracle", "psorc", "varorc"]
     CSV.write("$(results_path)/results_$(info).csv", result_hist[info])
     CSV.write("$(results_path)/outcomes_$(info).csv", outcome_hist[info])

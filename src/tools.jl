@@ -91,15 +91,3 @@ function progress(t, max_t)
     (t == max_t ? print("\r" * out * "\n") : print("\r" * out))
     flush(STDOUT)
 end
-
-
-function progress(t, max_t; case=0)
-    n_cols = 100
-    todo_sign = "."
-    done_sign = "x"
-    out = "["
-    row = 1
-    while max_t-(row*n_cols) > 0
-        out *= repeat(todo_sign, n_cols) * "\n"
-    out *= "]"
-end

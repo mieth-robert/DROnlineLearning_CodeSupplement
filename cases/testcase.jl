@@ -3,14 +3,14 @@
 function return_case_data()
     # Name of the case
     case_id = "testcase"
-    exp_id = "C"
+    exp_id = "detopf"
 
     # Specify data files
     datadir  = "data/feeder_data/basecase_lv_noneg"
     price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
-    t_total = 400
+    t_total = 10
     # number of inital timesteps (>=2)
     t_init = 2
 
@@ -19,7 +19,7 @@ function return_case_data()
     enable_voltage_constraints = true
     enable_generation_constraints = true
     enable_flow_constraints = true
-
+    compare_to_detopf = false
     run_power_flow_test = true
 
     # Voltage at root bus
@@ -50,7 +50,7 @@ function return_case_data()
     β1_init = ones(15)./dr_price_assumption
     β0_init = zeros(15)
 
-    return case_id, exp_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints, enable_generation_constraints, enable_flow_constraints, run_power_flow_test, v_root, tariff, η_v, η_g, relative_std, α, max_correlation, β1_set, β0_set, β1_init, β0_init
+    return case_id, exp_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints, enable_generation_constraints, enable_flow_constraints, compare_to_detopf, run_power_flow_test, v_root, tariff, η_v, η_g, relative_std, α, max_correlation, β1_set, β0_set, β1_init, β0_init
 end
 
 return_case_data()
