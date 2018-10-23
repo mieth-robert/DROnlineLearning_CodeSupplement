@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#SBATCH --time=8:00:00
 #SBATCH --job-name=fullrun1
 #SBATCH --mail-type=END
 #SBATCH --mail-user=rm4796@nyu.edu

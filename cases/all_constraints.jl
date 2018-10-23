@@ -3,7 +3,7 @@
 function return_case_data()
     # Name of the case
     case_id = "all_constaints"
-    exp_id = "fullrun1"
+    exp_id = "fullrun2"
 
     # Specify data files
     datadir  = "data/feeder_data/basecase_lv_noneg"
@@ -29,7 +29,7 @@ function return_case_data()
     # Price for demand Response
     dr_price = 150
     # Inital dr price assumption
-    dr_price_assumption = 150
+    dr_price_assumption = 80
     # Voltage Security margin
     η_v = 0.1
     # Generation Security margin
