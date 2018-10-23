@@ -3,3 +3,4 @@ ml_example/
 *.sublime-project
 *.sublime-workspace
 *.out
+core*
