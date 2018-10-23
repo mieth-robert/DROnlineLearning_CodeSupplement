@@ -1,0 +1,6 @@
+rsync -aivP -e ssh test.txt rm4796@prince.hpc.nyu.edu:/home/rm4796/sandboxrsync -aivP -e ssh test.txt rm4796@prince.hpc.nyu.edu:/home/rm4796/sandbox/
+
+rsync -aivP -e ssh rm4796@prince.hpc.nyu.edu:/home/rm4796/sandbox/test2.txt .
+
+rsync -aivP -e ssh rm4796@prince.hpc.nyu.edu:/home/rm4796/learning_on_network/DROnlineLearning/results/fullrun2 .
+
