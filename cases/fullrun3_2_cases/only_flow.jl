@@ -2,8 +2,8 @@
 
 function return_case_data()
     # Name of the case
-    case_id = "only_voltage"
-    exp_id = "fullrun1_a"
+    case_id = "only_flow"
+    exp_id = "fullrun3_2"
 
     # Specify data files
     datadir  = "data/feeder_data/basecase_lv_noneg"
@@ -16,9 +16,9 @@ function return_case_data()
 
     # Model settings
     robust_cc = true
-    enable_voltage_constraints = true
+    enable_voltage_constraints = false
     enable_generation_constraints = false
-    enable_flow_constraints = false
+    enable_flow_constraints = true
     compare_to_detopf = true
     run_power_flow_test = true
 
@@ -29,7 +29,7 @@ function return_case_data()
     # Price for demand Response
     dr_price = 150
     # Inital dr price assumption
-    dr_price_assumption = 150
+    dr_price_assumption = 300
     # Voltage Security margin
     η_v = 0.1
     # Generation Security margin
@@ -38,7 +38,7 @@ function return_case_data()
     relative_std = 0.2
     # Partizipation Factor
     α = zeros(15)
-    # α[1] = 1
+    α[1] = 1
     # Correlation settings
     max_correlation = 0
     # Factor for higher load

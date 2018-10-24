@@ -295,7 +295,7 @@ for t in 1:t_total
         # Save to history
         result[info][:t] = fill(t, nrow(result[info]))
         outcome[:t] = fill(t, nrow(outcome))
-        if t==1 
+       if t==1 
             result_hist[info] = result[info]
             outcome_hist[info] = outcome
         else
