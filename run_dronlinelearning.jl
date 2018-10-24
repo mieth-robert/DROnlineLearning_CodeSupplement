@@ -259,8 +259,7 @@ for t in 1:t_total
     for info in ["learning", "oracle", "psorc", "varorc"]
         info in keys(result) || continue
         
-        α_act = result[info][:alpha]
-        @show α_act 
+        α_act = result[info][:alpha] 
 
         # Determine system settings from det OPF
         if compare_to_detopf

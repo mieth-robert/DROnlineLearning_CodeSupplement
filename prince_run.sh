@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --time=8:00:00
-#SBATCH --job-name=fullrun1
+#SBATCH --time=10:00:00
+#SBATCH --job-name=fullrun3_2_1000
 #SBATCH --mail-type=END
 #SBATCH --mail-user=rm4796@nyu.edu
 
@@ -14,3 +14,4 @@ srun julia ./run_dronlinelearning.jl ./cases/only_flow.jl
 srun julia ./run_dronlinelearning.jl ./cases/only_voltage.jl
 srun julia ./run_dronlinelearning.jl ./cases/all_constraints.jl
 srun julia ./run_dronlinelearning.jl ./cases/fully_integrated.jl
+

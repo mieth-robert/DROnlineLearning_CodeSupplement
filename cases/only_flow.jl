@@ -3,14 +3,14 @@
 function return_case_data()
     # Name of the case
     case_id = "only_flow"
-    exp_id = "fullrun1_a"
+    exp_id = "fullrun3_2_1000"
 
     # Specify data files
     datadir  = "data/feeder_data/basecase_lv_noneg"
     price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
-    t_total = 500
+    t_total = 1000
     # number of inital timesteps (>=2)
     t_init = 2
 
@@ -29,7 +29,7 @@ function return_case_data()
     # Price for demand Response
     dr_price = 150
     # Inital dr price assumption
-    dr_price_assumption = 150
+    dr_price_assumption = 300
     # Voltage Security margin
     η_v = 0.1
     # Generation Security margin
@@ -38,7 +38,7 @@ function return_case_data()
     relative_std = 0.2
     # Partizipation Factor
     α = zeros(15)
-    # α[1] = 1
+    α[1] = 1
     # Correlation settings
     max_correlation = 0
     # Factor for higher load
