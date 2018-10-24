@@ -259,11 +259,13 @@ for t in 1:t_total
     for info in ["learning", "oracle", "psorc", "varorc"]
         info in keys(result) || continue
         
+        α_act = result[info][:alpha]
+
         # Determine system settings from det OPF
         if compare_to_detopf
             result_detopf, status_detopf, solvetime_detopf = run_demand_response_opf(feeder, β1, β0,
                                 μ_oracle, Σ_oracle, Ω_oracle;
-                                α=α, x_in=result[info][:x_opt], model_type="opf", robust_cc=false, enable_flow_constraints=true,
+                                α=α_act, x_in=result[info][:x_opt], model_type="opf", robust_cc=false, enable_flow_constraints=true,
                                 enable_voltage_constraints=true, enable_generation_constraints=true)
         end
 

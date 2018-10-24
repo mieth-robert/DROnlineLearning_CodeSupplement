@@ -37,7 +37,7 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
     γ = feeder.γ
 
     optimize_alpha = true
-    if (length(α) == n_buses) && (sum(α) == 1)  # for some weird reason this does not work!
+    if (length(α) == n_buses) && (sum(α) == 1)  
     # if (size(α,1) == n_buses) && (sum(α) == 1)
         optimize_alpha = false
     end
