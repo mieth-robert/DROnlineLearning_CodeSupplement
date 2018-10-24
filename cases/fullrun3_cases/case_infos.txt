@@ -1,0 +1,5 @@
+fullrun1: 500 steps with correct inital guess
+
+fullrun2: same as fullrun but wrong inital guess (80)
+
+fullrun3: same as fullrun but wrong inital guess (300)

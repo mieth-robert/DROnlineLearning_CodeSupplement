@@ -260,6 +260,7 @@ for t in 1:t_total
         info in keys(result) || continue
         
         α_act = result[info][:alpha]
+        @show α_act 
 
         # Determine system settings from det OPF
         if compare_to_detopf
@@ -295,7 +296,7 @@ for t in 1:t_total
         # Save to history
         result[info][:t] = fill(t, nrow(result[info]))
         outcome[:t] = fill(t, nrow(outcome))
-        if t==1 
+       if t==1 
             result_hist[info] = result[info]
             outcome_hist[info] = outcome
         else
