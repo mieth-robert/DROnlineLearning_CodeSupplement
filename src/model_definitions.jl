@@ -257,7 +257,8 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
         xb = model_type == "x_opf" ? getvalue(x_opt[b]) : x_opt[b]
         # λb = abs(xb)>1e-10 ? ((xb - β0[b]) - μ[b])/β1[b] : 0
         λb = (xb - β0[b] - μ[b])/β1[b]
-        v_real = sqrt(getvalue(v[b]))
+        v_squared = getvalue(v[b])
+	v_real = (v_squared >= 0) ? sqrt(v_squared) : 0
         alpha = (robust_cc & optimize_alpha) ?  getvalue(α[b]) : α[b]
         res = [b, buses[b].d_P, getvalue(gp[b]), getvalue(gq[b]), alpha, xb, getdual(enerbal_P[b]), λb, v_real, getobjectivevalue(m)]
         res = map(x -> abs(x)>1e-10 ? x : 0., res) # get rid of numerical noise
