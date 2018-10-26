@@ -33,7 +33,7 @@ casefile = length(ARGS) > 0 ? ARGS[1] : "cases/dev/testcase.jl"
 
 case_id, exp_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints,
         enable_generation_constraints, enable_flow_constraints, compare_to_detopf, run_power_flow_test, v_root, tariff, η_v,
-        η_g, relative_std, α, max_correlation, β1_set, β0_set, β1_init, β0_init = include(casefile)
+        η_g, relative_std, α, max_correlation, load_fact, β1_set, β0_set, β1_init, β0_init = include(casefile)
 println(">>>>> Succesfully loaded $(case_id)")
 
 #2 Load Data from file
@@ -49,6 +49,13 @@ t_total == 0 && (t_total = length(ws_prices))
 buses = feeder.buses
 lines = feeder.lines
 n_buses = feeder.n_buses
+
+# Apply load factor
+if load_fact != 1
+    for b in buses
+        set_bus_active_load(b, b.d_P * load_fact; auto_set_dQ = true)
+    end
+end
 
 # Find nodes without load (hence no demand response)
 loads = [b.d_P for b in buses]
@@ -107,6 +114,7 @@ x_hist = Dict()
 result_hist = Dict()
 compare_to_detopf && (result_detopf_hist = Dict())
 status_hist = DataFrame(t=[], learning=[], oracle=[], varorc=[], psorc=[])
+detopf_status_hist = DataFrame(t=[], learning=[], oracle=[], varorc=[], psorc=[])
 solvetime_hist = DataFrame(t=[], learning=[], oracle=[], varorc=[], psorc=[])
 # Result storages for PF results
 outcome_hist = Dict()
@@ -256,6 +264,7 @@ for t in 1:t_total
 
     # Create vector of errors that is the same for all cases
     ϵ_t = get_noise(ϵ_mvdist, no_load_buses)
+    status_detopf = Dict()
     for info in ["learning", "oracle", "psorc", "varorc"]
         info in keys(result) || continue
         
@@ -263,7 +272,7 @@ for t in 1:t_total
 
         # Determine system settings from det OPF
         if compare_to_detopf
-            result_detopf, status_detopf, solvetime_detopf = run_demand_response_opf(feeder, β1, β0,
+            result_detopf, status_detopf[info], solvetime_detopf = run_demand_response_opf(feeder, β1, β0,
                                 μ_oracle, Σ_oracle, Ω_oracle;
                                 α=α_act, x_in=result[info][:x_opt], model_type="opf", robust_cc=false, enable_flow_constraints=true,
                                 enable_voltage_constraints=true, enable_generation_constraints=true)
@@ -317,6 +326,7 @@ for t in 1:t_total
     end
     push!(status_hist, [t, status["learning"], status["oracle"], status["varorc"], status["psorc"]])
     push!(solvetime_hist, [t, solvetime["learning"], solvetime["oracle"], solvetime["varorc"], solvetime["psorc"]])
+    compare_to_detopf && push!(detopf_status_hist, [t, status_detopf["learning"], status_detopf["oracle"], status_detopf["varorc"], status_detopf["psorc"]])
 
 # repeat
 end
@@ -343,6 +353,7 @@ end
 
 
 CSV.write("$(results_path)/status.csv", status_hist)
+CSV.write("$(results_path)/status_detopf.csv", detopf_status_hist)
 CSV.write("$(results_path)/solvetime.csv", solvetime_hist)
 wholesale_df = DataFrame(wholesale=ws_prices[1:t_total])
 CSV.write("$(results_path)/wholesale_prices.csv", wholesale_df)

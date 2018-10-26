@@ -67,6 +67,12 @@ type Bus
       return b
    end
 end
+function set_bus_active_load(b::Bus, dP; auto_set_dQ=false)
+    b.d_P = dP
+    if auto_set_dQ
+        b.d_Q = dP * b.tanphi
+    end
+end
 
 type Line
    index::Any
