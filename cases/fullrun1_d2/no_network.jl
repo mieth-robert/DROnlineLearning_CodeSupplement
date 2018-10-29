@@ -1,13 +1,15 @@
 # invoke using include()
 
+# Same as fullrun1 but underestimate dr_price initally
+
 function return_case_data()
     # Name of the case
-    case_id = "only_flow"
-    exp_id = "fullrun1_nyc"
+    case_id = "no_network"
+    exp_id = "fullrun1_d2"
 
     # Specify data files
     datadir  = "data/feeder_data/basecase_lv_noneg"
-    price_file = "data/price_data/nyiso_nyc_2018-10-08_to_2018-10-10.csv"
+    price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
     t_total = 500
@@ -18,7 +20,7 @@ function return_case_data()
     robust_cc = true
     enable_voltage_constraints = false
     enable_generation_constraints = false
-    enable_flow_constraints = true
+    enable_flow_constraints = false
     compare_to_detopf = true
     run_power_flow_test = true
 
@@ -42,7 +44,7 @@ function return_case_data()
     # Correlation settings
     max_correlation = 0
     # Factor for higher load
-    load_fact = 1
+    load_fact = 2
 
     β1_set = ones(15)./dr_price
     β0_set = zeros(15)

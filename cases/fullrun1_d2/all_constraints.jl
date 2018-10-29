@@ -2,12 +2,12 @@
 
 function return_case_data()
     # Name of the case
-    case_id = "only_flow"
-    exp_id = "fullrun1_nyc"
+    case_id = "all_constaints"
+    exp_id = "fullrun1_d2"
 
     # Specify data files
     datadir  = "data/feeder_data/basecase_lv_noneg"
-    price_file = "data/price_data/nyiso_nyc_2018-10-08_to_2018-10-10.csv"
+    price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
     t_total = 500
@@ -16,8 +16,8 @@ function return_case_data()
 
     # Model settings
     robust_cc = true
-    enable_voltage_constraints = false
-    enable_generation_constraints = false
+    enable_voltage_constraints = true
+    enable_generation_constraints = true
     enable_flow_constraints = true
     compare_to_detopf = true
     run_power_flow_test = true
@@ -35,14 +35,14 @@ function return_case_data()
     # Generation Security margin
     η_g = 0.1
     # Demand standard deviation relative to load
-    relative_std = 0.2
+    relative_std = 0.1
     # Partizipation Factor
     α = zeros(15)
     α[1] = 1
     # Correlation settings
     max_correlation = 0
     # Factor for higher load
-    load_fact = 1
+    load_fact = 2
 
     β1_set = ones(15)./dr_price
     β0_set = zeros(15)

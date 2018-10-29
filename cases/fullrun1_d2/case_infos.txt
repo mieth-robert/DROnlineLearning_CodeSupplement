@@ -1,0 +1,11 @@
+fullrun1: 500 steps with correct inital guess on random prices
+
+fullrun2: same as fullrun1 but wrong inital guess (80)
+
+fullrun3: same as fullrun1 but wrong inital guess (300)
+
+fullrun3_2: same as fullrun3 but with higher rel_std (0.2)
+
+fullrun1_a: same as fullrun1 but optmizing over alpha
+
+fullrun1_d2: same as fullrun1 but with 2x load
