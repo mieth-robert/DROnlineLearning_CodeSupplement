@@ -5,10 +5,10 @@
 function return_case_data()
     # Name of the case
     case_id = "no_network"
-    exp_id = "fullrun1_noDER"
+    exp_id = "fullrun1_notrobust"
 
     # Specify data files
-    datadir  = "data/feeder_data/basecase_noneg_noDER"
+    datadir  = "data/feeder_data/basecase_lv_noneg"
     price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
@@ -17,7 +17,7 @@ function return_case_data()
     t_init = 2
 
     # Model settings
-    robust_cc = true
+    robust_cc = false
     enable_voltage_constraints = false
     enable_generation_constraints = false
     enable_flow_constraints = false
@@ -37,7 +37,7 @@ function return_case_data()
     # Generation Security margin
     η_g = 0.1
     # Demand standard deviation relative to load
-    relative_std = 0.2
+    relative_std = 0.1
     # Partizipation Factor
     α = zeros(15)
     α[1] = 1

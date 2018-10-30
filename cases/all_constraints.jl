@@ -3,10 +3,10 @@
 function return_case_data()
     # Name of the case
     case_id = "all_constaints"
-    exp_id = "fullrun1_noDER"
+    exp_id = "fullrun1_notrobust"
 
     # Specify data files
-    datadir  = "data/feeder_data/basecase_noneg_noDER"
+    datadir  = "data/feeder_data/basecase_lv_noneg"
     price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
@@ -15,7 +15,7 @@ function return_case_data()
     t_init = 2
 
     # Model settings
-    robust_cc = true
+    robust_cc = false
     enable_voltage_constraints = true
     enable_generation_constraints = true
     enable_flow_constraints = true
