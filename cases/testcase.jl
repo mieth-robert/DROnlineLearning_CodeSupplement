@@ -2,25 +2,25 @@
 
 function return_case_data()
     # Name of the case
-    case_id = "only_flow"
-    exp_id = "fullrun1_nyc"
+    case_id = "testcase"
+    exp_id = "detopf"
 
     # Specify data files
     datadir  = "data/feeder_data/basecase_lv_noneg"
-    price_file = "data/price_data/nyiso_nyc_2018-10-08_to_2018-10-10.csv"
+    price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
-    t_total = 500
+    t_total = 100
     # number of inital timesteps (>=2)
     t_init = 2
 
     # Model settings
-    robust_cc = true
-    enable_voltage_constraints = false
-    enable_generation_constraints = false
-    enable_flow_constraints = true
-    compare_to_detopf = true
-    run_power_flow_test = true
+    robust_cc = true # If true run using der dist. robust OPF, else derterministic
+    enable_voltage_constraints = true # if false, voltage constraints are never enforced
+    enable_generation_constraints = true # if false only det. generation constraints are enforced (if not generation constraints are enforced the problem is unbounded)
+    enable_flow_constraints = true # if false, flow constraints are never enforced
+    compare_to_detopf = true # only DR signals are derived from the robust model, generation dispatch is again taken from a det. OPF run
+    run_power_flow_test = true # check result feasibility after runs
 
     # Voltage at root bus
     v_root = 1
@@ -29,21 +29,23 @@ function return_case_data()
     # Price for demand Response
     dr_price = 150
     # Inital dr price assumption
-    dr_price_assumption = 150
+    dr_price_assumption = 100
     # Voltage Security margin
     η_v = 0.1
     # Generation Security margin
     η_g = 0.1
     # Demand standard deviation relative to load
-    relative_std = 0.2
+    relative_std = 0.1
     # Partizipation Factor
     α = zeros(15)
-    α[1] = 1
+    # α[1] = 1
     # Correlation settings
     max_correlation = 0
     # Factor for higher load
-    load_fact = 1
+    load_fact = 2
 
+    # Create vector of parameters for each bus
+    # Change here for individual prices at each bus
     β1_set = ones(15)./dr_price
     β0_set = zeros(15)
 

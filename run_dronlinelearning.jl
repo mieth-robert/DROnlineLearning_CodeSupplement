@@ -29,7 +29,7 @@ include("src/test_power_flow.jl")
 if length(ARGS) == 0 println(">>>>> No case argument provided. Proceeding with default testcase") end
 
 #1 Load case settings
-casefile = length(ARGS) > 0 ? ARGS[1] : "cases/dev/testcase.jl"
+casefile = length(ARGS) > 0 ? ARGS[1] : "cases/testcase.jl"
 
 case_id, exp_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints,
         enable_generation_constraints, enable_flow_constraints, compare_to_detopf, run_power_flow_test, v_root, tariff, η_v,
