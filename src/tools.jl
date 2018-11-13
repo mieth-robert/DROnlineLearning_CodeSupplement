@@ -1,3 +1,15 @@
+# Copyright (c) 2018 Robert Mieth and Yury Dvorkin
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# +++++
+# tools.jl
+#
+# Some auxillary useful functions
+#
+
 
 # Empirical Residual Distribution
 # Input:    residuals ... matrix (n x t)
@@ -61,7 +73,6 @@ function get_noise(mvdist, zero_indices)
     return v
 end
 
-
 function create_random_init_data(t_init, no_load_buses, mvdist; lambda_max=100)
     x_hist = []
     λ_hist = []
@@ -78,16 +89,4 @@ function create_random_init_data(t_init, no_load_buses, mvdist; lambda_max=100)
         end
     end
     return λ_hist, x_hist
-end
-
-function progress(t, max_t)
-    max_bars = 50
-    r = t/max_t
-    n = Int(floor(r*max_bars))
-    p = Int(floor(r*100))
-    bar = repeat("=", n)
-    res = repeat(" ", max_bars - n)
-    out = "[" * bar * res * "] " * string(p) * "%"
-    (t == max_t ? print("\r" * out * "\n") : print("\r" * out))
-    flush(STDOUT)
 end

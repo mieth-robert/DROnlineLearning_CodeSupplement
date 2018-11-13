@@ -1,16 +1,26 @@
-# invoke using include()
+# Copyright (c) 2018 Robert Mieth and Yury Dvorkin
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# +++++
+# testcase.jl
+#
+# Default testcase specification
+# Invoke file using include()
 
 function return_case_data()
     # Name of the case
     case_id = "testcase"
-    exp_id = "detopf"
+    exp_id = "testcase"
 
     # Specify data files
     datadir  = "data/feeder_data/basecase_lv_noneg"
     price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
-    t_total = 100
+    t_total = 50
     # number of inital timesteps (>=2)
     t_init = 2
 
@@ -19,7 +29,7 @@ function return_case_data()
     enable_voltage_constraints = true # if false, voltage constraints are never enforced
     enable_generation_constraints = true # if false only det. generation constraints are enforced (if not generation constraints are enforced the problem is unbounded)
     enable_flow_constraints = true # if false, flow constraints are never enforced
-    compare_to_detopf = true # only DR signals are derived from the robust model, generation dispatch is again taken from a det. OPF run
+    compare_to_detopf = false # only DR signals are derived from the robust model, generation dispatch is again taken from a det. OPF run
     run_power_flow_test = true # check result feasibility after runs
 
     # Voltage at root bus
@@ -29,7 +39,7 @@ function return_case_data()
     # Price for demand Response
     dr_price = 150
     # Inital dr price assumption
-    dr_price_assumption = 100
+    dr_price_assumption = 150
     # Voltage Security margin
     η_v = 0.1
     # Generation Security margin
@@ -38,11 +48,11 @@ function return_case_data()
     relative_std = 0.1
     # Partizipation Factor
     α = zeros(15)
-    # α[1] = 1
+    α[1] = 1
     # Correlation settings
     max_correlation = 0
     # Factor for higher load
-    load_fact = 2
+    load_fact = 1
 
     # Create vector of parameters for each bus
     # Change here for individual prices at each bus
