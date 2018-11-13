@@ -37,7 +37,7 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
     γ = feeder.γ
 
     optimize_alpha = true
-    if (length(α) == n_buses) && (sum(α) == 1)  # for some weird reason this does not work!
+    if (length(α) == n_buses) && (abs(sum(α) - 1) < 1e-8)  
     # if (size(α,1) == n_buses) && (sum(α) == 1)
         optimize_alpha = false
     end
@@ -107,7 +107,7 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
         @variable(m, M_gq_up[gen_buses, j=1:(n_buses+1), k=1:(n_buses+1)])
         @variable(m, M_gq_low[gen_buses, j=1:(n_buses+1), k=1:(n_buses+1)])
     end
-    if optimize_alpha
+    if (robust_cc & optimize_alpha)
         @variable(m, α[b=1:n_buses] >= 0) # Participation Factor
     end
 
@@ -137,7 +137,7 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
     # end
 
     # constaints
-    if robust_cc && optimize_alpha
+    if (robust_cc & optimize_alpha)
         @constraint(m, sum(α) == 1)
         @constraint(m, [b=buses_without_generation], α[b] == 0)
     end
@@ -257,8 +257,9 @@ function run_demand_response_opf(feeder, β1, β0, μ, Σ, Ω;
         xb = model_type == "x_opf" ? getvalue(x_opt[b]) : x_opt[b]
         # λb = abs(xb)>1e-10 ? ((xb - β0[b]) - μ[b])/β1[b] : 0
         λb = (xb - β0[b] - μ[b])/β1[b]
-        v_real = sqrt(getvalue(v[b]))
-        alpha = optimize_alpha ?  getvalue(α[b]) : α[b]
+        v_squared = getvalue(v[b])
+	v_real = (v_squared >= 0) ? sqrt(v_squared) : 0
+        alpha = (robust_cc & optimize_alpha) ?  getvalue(α[b]) : α[b]
         res = [b, buses[b].d_P, getvalue(gp[b]), getvalue(gq[b]), alpha, xb, getdual(enerbal_P[b]), λb, v_real, getobjectivevalue(m)]
         res = map(x -> abs(x)>1e-10 ? x : 0., res) # get rid of numerical noise
         push!(result_df, res)

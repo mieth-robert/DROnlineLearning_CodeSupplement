@@ -10,17 +10,17 @@ function return_case_data()
     price_file = "data/price_data/rand_max200_min30_n10000.csv"
 
     # total number of timesteps
-    t_total = 10
+    t_total = 100
     # number of inital timesteps (>=2)
     t_init = 2
 
     # Model settings
-    robust_cc = true
-    enable_voltage_constraints = true
-    enable_generation_constraints = true
-    enable_flow_constraints = true
-    compare_to_detopf = true
-    run_power_flow_test = true
+    robust_cc = true # If true run using der dist. robust OPF, else derterministic
+    enable_voltage_constraints = true # if false, voltage constraints are never enforced
+    enable_generation_constraints = true # if false only det. generation constraints are enforced (if not generation constraints are enforced the problem is unbounded)
+    enable_flow_constraints = true # if false, flow constraints are never enforced
+    compare_to_detopf = true # only DR signals are derived from the robust model, generation dispatch is again taken from a det. OPF run
+    run_power_flow_test = true # check result feasibility after runs
 
     # Voltage at root bus
     v_root = 1
@@ -38,19 +38,21 @@ function return_case_data()
     relative_std = 0.1
     # Partizipation Factor
     α = zeros(15)
-    α[1] = 1
+    # α[1] = 1
     # Correlation settings
     max_correlation = 0
     # Factor for higher load
-    load_fact = 1
+    load_fact = 2
 
+    # Create vector of parameters for each bus
+    # Change here for individual prices at each bus
     β1_set = ones(15)./dr_price
     β0_set = zeros(15)
 
     β1_init = ones(15)./dr_price_assumption
     β0_init = zeros(15)
 
-    return case_id, exp_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints, enable_generation_constraints, enable_flow_constraints, compare_to_detopf, run_power_flow_test, v_root, tariff, η_v, η_g, relative_std, α, max_correlation, β1_set, β0_set, β1_init, β0_init
+    return case_id, exp_id, datadir, price_file, t_total, t_init, robust_cc, enable_voltage_constraints, enable_generation_constraints, enable_flow_constraints, compare_to_detopf, run_power_flow_test, v_root, tariff, η_v, η_g, relative_std, α, max_correlation, load_fact, β1_set, β0_set, β1_init, β0_init
 end
 
 return_case_data()

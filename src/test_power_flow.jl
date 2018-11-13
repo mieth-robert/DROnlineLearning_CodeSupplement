@@ -23,7 +23,7 @@ function run_power_flow_dr(feeder, result_df, x_observed)
     load_after_dr = loads - x_observed
     error_sum = sum(load_after_dr) - sum(gP_opt)
     error_sum_Q = sum(load_after_dr.*pfs) - sum(gQ_opt)
-
+    
     gP_balanced = gP_opt .+ (α_opt .* error_sum)
     gQ_balanced = gQ_opt .+ (α_opt .* error_sum_Q)
 

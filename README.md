@@ -24,3 +24,13 @@ julia> Pkg.pin("DataFrames", v"0.11.7")
 
 * Running the code:*
 
+
+The code for the experiments is contained in the ``run_dronlinelearning.jl`` file as well as the auxillary files in the ``src`` directory. 
+The ``run_dronlinelearning.jl`` file is the main file that loads the data and performs the iterative algortihm based on the setting specified in a case file. The file  ``input.jl`` defines necessarty datatypes and functons to load an prepare the network data, ``model_definitions.jl`` contains the JuMP formulations, ``test_power_flow.jl`` contains the methods for feasibility checks and ``tools.jl`` contains some auxillary functions.
+
+You can run a testcase provided in ``cases/testcase.jl`` by executing:
+```
+julia run_dronlinelearning.jl cases/testcase.jl
+```
+If no specific case argument is provided, the script will run the testcase per default. The casefile is also a julia file and is heavily commented. It allows to easily parametrize the experiment. Note, that a single timestep may take up to several seconds in comupation. 
+
