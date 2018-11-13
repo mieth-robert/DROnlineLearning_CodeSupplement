@@ -1,10 +1,10 @@
 # OnlineLearningDRSupplement
-Respostitory containing supplementary data and code for "Online Learning for Network Constrained Demand Response Pricing in Distribution Systems" by Mieth and Dvorkin. [DOI](pending)
+Repository containing supplementary data and code for "Online Learning for Network Constrained Demand Response Pricing in Distribution Systems" by Mieth and Dvorkin. [DOI](pending)
 
 *Installation instructions:*
 
-The optimization model was implemented by using [JuMP](https://github.com/JuliaOpt/JuMP.jl) and auxillary packages in the [Julia](http://julialang.org/downloads/) programming language.
-Additionally, we used Mosek 8.1.0.63 in our numerical experiments. [Mosek](https://www.mosek.com) is a commercial solver which must be installed and licensed. The solver was choosen for its specifc features for semi-definite programming. For more information on solvers, see the JuMP documentation.
+The optimization model was implemented by using [JuMP](https://github.com/JuliaOpt/JuMP.jl) and auxiliary packages in the [Julia](http://julialang.org/downloads/) programming language.
+Additionally, we used Mosek 8.1.0.63 in our numerical experiments. [Mosek](https://www.mosek.com) is a commercial solver which must be installed and licensed. The solver was chosen for its specific features for semi-definite programming. For more information on solvers, see the JuMP documentation.
 
 The experiments requre Julia 0.6 and the following Julia packages:
 - [JuMP](https://github.com/JuliaOpt/JuMP.jl)0.18.3
@@ -22,15 +22,15 @@ julia> Pkg.pin("CSV", v"0.2.5")
 julia> Pkg.pin("DataFrames", v"0.11.7")
 ```
 
-* Running the code:*
+*Running the code:*
 
 
-The code for the experiments is contained in the ``run_dronlinelearning.jl`` file as well as the auxillary files in the ``src`` directory. 
-The ``run_dronlinelearning.jl`` file is the main file that loads the data and performs the iterative algortihm based on the setting specified in a case file. The file  ``input.jl`` defines necessarty datatypes and functons to load an prepare the network data, ``model_definitions.jl`` contains the JuMP formulations, ``test_power_flow.jl`` contains the methods for feasibility checks and ``tools.jl`` contains some auxillary functions.
+The code for the experiments is contained in the ``run_dronlinelearning.jl`` file as well as the auxiliary files in the ``src`` directory. 
+The ``run_dronlinelearning.jl`` file is the main file that loads the data and performs the iterative algorithm based on the setting specified in a case file. The file  ``input.jl`` defines necessary data types and functions to load an prepare the network data, ``model_definitions.jl`` contains the JuMP formulations, ``test_power_flow.jl`` contains the methods for feasibility checks and ``tools.jl`` contains some auxiliary functions.
 
 You can run a testcase provided in ``cases/testcase.jl`` by executing:
 ```
 julia run_dronlinelearning.jl cases/testcase.jl
 ```
-If no specific case argument is provided, the script will run the testcase per default. The casefile is also a julia file and is heavily commented. It allows to easily parametrize the experiment. Note, that a single timestep may take up to several seconds in comupation. 
+If no specific case argument is provided, the script will run the testcase per default. The casefile is also a julia file and is heavily commented. It allows to easily parametrize the experiment. Note, that a single timestep may take up to several seconds in computation. 
 
