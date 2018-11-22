@@ -24,7 +24,6 @@ julia> Pkg.pin("DataFrames", v"0.11.7")
 
 *Running the code:*
 
-
 The code for the experiments is contained in the ``run_dronlinelearning.jl`` file as well as the auxiliary files in the ``src`` directory. 
 The ``run_dronlinelearning.jl`` file is the main file that loads the data and performs the iterative algorithm based on the setting specified in a case file. The file  ``input.jl`` defines necessary data types and functions to load an prepare the network data, ``model_definitions.jl`` contains the JuMP formulations, ``test_power_flow.jl`` contains the methods for feasibility checks and ``tools.jl`` contains some auxiliary functions.
 
